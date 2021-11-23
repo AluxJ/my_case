@@ -1,0 +1,246 @@
+#include <iostream>
+#include<opencv2/opencv.hpp>
+#include<vector>
+#include<math.h>
+#include<map>
+#include<algorithm>
+using namespace std;
+using namespace cv;
+//about fream
+Mat fream;
+Mat fream_hsv,fream_gray,fream_hsv2;
+vector<vector<Point>>contours;
+Mat top_points;//set card top point
+RotatedRect rect1;// card's rotaterect
+Mat outputpoints;//a Mat to get card point
+vector<Mat> hsv;
+vector<int> hsv2;
+//about circle
+vector<pair<float,int>>circles_id_and_distance;
+//pair<float,int>
+Point2d center_points,circle_points;//circle and card center point
+RotatedRect circle_rect;
+float angle;
+int flag;
+
+//vector<multiset<float,int>>::iterator map_it=circles_id_and_distance.begin();
+//void quicksort(int left,int right)
+//{
+//    int i,j,l;
+//    pair<float,int> temp;
+//    float t;
+//    if(left>right)
+//    {
+//       exit(0);
+//    }
+//    temp.first=circles_id_and_distance.pop_back({});
+//    i=left;
+//    j=right;
+//    while(i!=j)
+//    {
+//        while(circles_id_and_distance[j].first>=temp.first&&i<j)
+//        {
+//            j--;
+//        }
+//        while(circles_id_and_distance[i].first<=temp.first&&i<j)
+//        {
+//            i++;
+//        }
+//        if(i<j)
+//        {  // change dis
+//            t=circles_id_and_distance[i].first;
+//            circles_id_and_distance[i].first=circles_id_and_distance[j].first;
+//            circles_id_and_distance[j].first=t;
+//            //change id
+//            l=circles_id_and_distance[i].second;
+//            circles_id_and_distance[i].second=circles_id_and_distance[j].second;
+//            circles_id_and_distance[j].second=l;
+
+//        }
+//    }
+//    circles_id_and_distance[left]=circles_id_and_distance[i];
+//    circles_id_and_distance[i]=temp;
+//    quicksort(left,i-1);
+//    quicksort(i+1,right);
+//}
+bool pairsort(pair<float,int> &a,pair<float,int>&b)
+{
+    return a.first<b.first;
+}
+int main()
+{VideoCapture camera(2);
+
+    while(1)
+    {
+        camera>>fream;
+        vector<vector<Point>>circle;
+        circle.clear();
+        circles_id_and_distance.clear();
+        imshow("fream0",fream);
+       
+        cvtColor(fream,fream_gray,COLOR_BGR2GRAY);
+        threshold(fream_gray,fream_gray,50,255,THRESH_OTSU|THRESH_BINARY_INV);
+        imshow("grey and threshold",fream_gray);
+        contours.clear();
+        findContours(fream_gray,contours,RETR_LIST,CHAIN_APPROX_NONE);
+        int count=0;
+        for(size_t i=0;i<contours.size();i++)
+        {   int area=contourArea(contours[i]);
+            if(area>300)
+            {
+                cout<<"cutcut"<<endl;
+                drawContours(fream,contours,i,Scalar(255,54,36),2);
+                imshow("fream1",fream);
+                flag=i;
+                rect1=minAreaRect(contours[i]);//get the card contour
+                //card_top_point.push_back(rect1)
+                center_points.x=rect1.center.x;
+                center_points.y=rect1.center.y;
+                cout<<"the center now is"<<center_points<<endl;
+            }
+            else
+            {
+                if((int)i!=flag)
+                {
+                    circle.push_back(contours[i]);
+                    circles_id_and_distance.push_back({0,i});
+                    count++;
+
+                }
+            }
+        }
+            //get distance from the point to the width
+
+            for(size_t n=0;n<circle.size();n++)//for each circle contours
+            { //cout<<"stop"<<endl;
+                circle_rect=minAreaRect(contours[n]);
+                circle_points=circle_rect.center;
+                int d1,d2;
+                boxPoints(rect1,outputpoints);
+                 //cout<<"outputarry is"<<outputpoints<<endl;
+
+                if(rect1.size.width<rect1.size.height)
+                {
+                    d1= sqrt(circle_points.x-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(1,0)))
+                             *(circle_points.x-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(1,0))))
+                             +(circle_points.y-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(1,0)))
+                             *(circle_points.y-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(1,0))))));
+                   // cout<<"x"<<outputpoints.at<float>(1,1)<<endl;
+                   //cout<<"y"<<outputpoints.at<float>(2,1)<<endl;
+                    d2= sqrt(circle_points.x-(1/2*(outputpoints.at<float>(2,0)+outputpoints.at<float>(3,0)))
+                             *(circle_points.x-(1/2*(outputpoints.at<float>(2,0)+outputpoints.at<float>(3,0))))
+                             +(circle_points.y-(1/2*(outputpoints.at<float>(2,1)+outputpoints.at<float>(3,1)))
+                             *(circle_points.y-(1/2*(outputpoints.at<float>(2,1)+outputpoints.at<float>(3,1))))));
+
+                      if(d1>d2)//get min distance
+                      {
+                          circles_id_and_distance.push_back({d2,n});
+                         // cout<<1<<endl;
+                      }
+                      else
+                      {
+                          circles_id_and_distance.push_back({d1,n});
+                         // cout<<2<<endl;
+                      }
+
+                }
+                else
+                {
+
+                    d1= sqrt(circle_points.x-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(3,0)))
+                             *(circle_points.x-(1/2*(outputpoints.at<float>(0,0)+outputpoints.at<float>(3,0))))
+                             +(circle_points.y-(1/2*(outputpoints.at<float>(0,1)+outputpoints.at<float>(3,1)))
+                             *(circle_points.y-(1/2*(outputpoints.at<float>(0,1)+outputpoints.at<float>(3,1))))));
+
+                    d1= sqrt(circle_points.x-(1/2*(outputpoints.at<float>(1,0)+outputpoints.at<float>(2,0)))
+                             *(circle_points.x-(1/2*(outputpoints.at<float>(1,0)+outputpoints.at<float>(2,0))))
+                             +(circle_points.y-(1/2*(outputpoints.at<float>(1,1)+outputpoints.at<float>(2,1)))
+                             *(circle_points.y-(1/2*(outputpoints.at<float>(1,1)+outputpoints.at<float>(2,1))))));
+                      if(d1>d2)//get min distance
+                      {
+                          circles_id_and_distance.push_back({d2,n});
+                          //cout<<3<<endl;
+                      }
+                      else
+                      {
+                          circles_id_and_distance.push_back({d1,n});
+                         // cout<<4<<endl;
+                      }
+
+                }
+               // waitKey(0);
+                //d1=sqrt()
+            }
+           // sort pair
+            sort(circles_id_and_distance.begin(),circles_id_and_distance.end(),pairsort);
+//            for(size_t n1;n1<circles_id_and_distance.size()-1;n1++)
+//            {
+//                for(size_t n2;n2<circles_id_and_distance.size()-n1-1;n2++)
+//                {    int d3,d4;
+//                   // d3=circles_id_and_distance.pop_back(n2,);
+//                    d4=circles_id_and_distance.at(n2+1).second;
+//                    if(d3>d4)
+//                      {
+//                          pair<float,int> tmp;
+//                          tmp=circles_id_and_distance[n1];
+//                          circles_id_and_distance[n1]=circles_id_and_distance[n2];
+//                          circles_id_and_distance[n2]=tmp;
+//                      }
+//                 }
+//            }
+
+            Point last_point;
+            circle_rect=minAreaRect(contours[circles_id_and_distance.begin()->second]);
+            last_point=circle_rect.center;
+            if(last_point.x<1000&&last_point.y<1000)
+           {
+            cout<<"the last point is "<<last_point<<endl;
+            cout<<"the center point is"<<center_points<<endl;
+            float angle=fastAtan2(last_point.x-center_points.x,last_point.y-center_points.y);
+            cout<<"angele is"<<angle<<endl;
+            }
+            cvtColor(fream,fream_hsv,COLOR_BGR2HSV);
+            //imshow("hsv1",fream_hsv);
+            hsv.clear();
+            hsv2.clear();
+            split(fream_hsv,hsv);//get hsv
+            hsv[2]+=50 ;
+            hsv2.push_back(hsv[0].at<uchar>((uchar)center_points.x, (uchar)center_points.y));
+            //cout<<hsv2[0]<<endl;
+            hsv2.push_back(hsv[1].at<uchar>((uchar)center_points.x, (uchar)center_points.y));
+            //cout<<hsv2[1]<<endl;
+            hsv2.push_back(hsv[2].at<uchar>((uchar)center_points.x, (uchar)center_points.y));
+            //cout<<hsv2[2]<<endl;
+            //equalizeHist(hsv[2],hsv[2]);
+            merge(hsv,fream_hsv);
+            cvtColor(fream_hsv,fream_hsv2,COLOR_HSV2BGR);
+            if(((hsv2[0]>=0&&hsv2[0]<=10)||(hsv2[0]>=156&&hsv2[0]<=180))
+                    &&(hsv2[1]>=43&&hsv2[1]<=255)
+                    &&(hsv2[2]>=46&&hsv2[2]<=255))
+            {   putText(fream,"RED",Point(60,60),FONT_HERSHEY_SIMPLEX,1,Scalar(0,0,0));
+
+            }
+            else if((hsv2[0]>=100&&hsv2[0]<=124)
+                    &&(hsv2[1]>=43&&hsv2[1]<=255)
+                    &&(hsv2[2]>=46&&hsv2[2]<=255))
+            {
+                //            cout<<"bule0is"<<hsv2[0]<<endl;
+                //            cout<<"bule1is"<<hsv2[1]<<endl;
+                //            cout<<"bule2is"<<hsv2[2]<<endl;
+                //inRange(fream,Scalar(100,80,46),Scalar(124,255,255),dist);
+                //               Mat elem=getStructuringElement(MORPH_RECT,Size(5,5));
+                //               morphologyEx(fream,fream,MORPH_OPEN,elem);
+                //               morphologyEx(fream,fream,MORPH_CLOSE,elem);
+                putText(fream,"BLUE",Point(60,60),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,0));
+                cout<<"the color now is "<<"蓝"<<endl;          
+            }
+
+                  imshow("end",fream);
+ waitKey(1);
+    }
+
+        return 0;
+    }
+
+
+
