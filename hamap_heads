@@ -1,0 +1,82 @@
+#include <iostream>
+#include <windows.h>
+#include<string>
+#include<stdio.h>
+#include<vector>
+#include<unordered_map>
+using namespace std;
+//constexpr auto Maxsize = 50;
+//class Record {};
+class HashList;
+//vector<Record> person;//依据每个人的名字 找 
+//通讯人类
+class Record
+{
+   
+public:
+    string retailer;//运营商
+    string phone_num;//电话号码
+    string name;//联系人名称
+    string address;//联系人地址
+    Record *ptr = nullptr;//建立表链用的指针
+	void* first = nullptr;
+public:
+   
+    void createhash(HashList *H, Record& R, unordered_map<string, Record*>& PersonList);
+   
+    //输入联系人的信息并且建立哈希表
+    void  output(const string& s, unordered_map<string, Record*>& PersonList);//按照姓名查找输出联系人信息
+    void  output2(const string& s, HashList H[]);//按照电话号码查找输出联系人信息
+   
+	void   delete_person(HashList H[],const string &data);//删除不想要的联系人(检测输入名字或者电话号码都可以)
+
+	void   alter_inf(HashList H[],const string &data);//修改成员信息
+private:
+
+};
+//建立散列表类
+class HashList
+{
+   
+public:
+	Record * ptr = nullptr;//存表链的地址
+	int length=0;//长度
+    int num = 0;//下方连接的联系人个数
+	//void* self = nullptr;
+public:	
+	
+	HashList* Data_get(HashList&L);//获得数据
+	HashList* tablecreate(string,int);//用名字创建列表
+	HashList* tablecreate(char*&);//用电话号码创建列表
+
+	
+
+private:
+
+};
+
+//HashList* HashList::Data_get(HashList& L)//按照数组的顺序用指针读取
+//{
+	//以后有了数据库用
+	//return &L;
+//}
+//HashList* HashList::tablecreate(string,int)//用名字创建列表
+//{
+
+//}
+//HashList* HashList::tablecreate(char*& s)//用电话号码创建列表
+//{
+	//if (!s)
+	//{
+		//cout << "打开异常即将退出" << endl;
+		//exit(0);
+	//}
+
+    //return 
+//}
+
+
+
+
+
+
