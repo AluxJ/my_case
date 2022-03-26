@@ -1,0 +1,575 @@
+/*
+我的思路是：利用链表存储信息
+首先以数组的形式建立哈希表，每个数组的内部是一个指针，利用 数字分析法 来确定该存储谁，key值是多少
+*/
+/*中国电信号段：
+133、149、153
+中国联通号段：
+130、131、132
+中国移动号段：
+134、135、136
+*/
+#include <iostream>
+#include <windows.h>
+#include<string>
+#include"hashmap.h"
+using namespace std;
+
+
+HashList H[40]={};//每个格子代表电话号码前三个
+unordered_map <string, Record*> PersonList;//用名字作为key的哈希表
+Record R;
+ 
+void init()
+{
+    cout << "****************************" << endl;
+    cout << "*欢迎使用手机通讯录查询系统*" << endl;
+    cout << "****************************" << endl;
+    cout << "功能介绍：" << endl;
+    cout << "按下数字1 可添加联系人" << endl;
+    cout << "按下数字2 可通过电话查找联系人信息" << endl;
+    cout << "按下数字3 可通过姓名查找联系人信息" << endl;
+    cout << "按下数字4 可更改联系人信息" << endl;// undo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    cout << "按下数字5 可删除联系人信息" << endl;
+    cout << "按下数字6 可退出系统" << endl;
+}
+//开始建立
+void Record::createhash(HashList H[], Record& R, unordered_map<string, Record*>& PersonList)//输入联系人的信息
+{
+    //cout << "111" << endl;
+    int flag = 0;//用来检测是否需要退出或者
+    if (!H)//打开异常直接退出
+    {
+        cout << "打开异常" << endl;
+        exit(0);
+    }
+    //选择添加或者退出
+    int i = 0;
+    int tag = 0;
+    while (i < 23)//没有联系人就提示没有联系人    因为假设有每个运营商有三个不同的前三位
+    {
+        if (H[i].ptr == NULL)
+            i++;
+        // if (L[i].ptr != nullptr)
+        else
+            tag = 1;
+    }
+
+    if (tag == 0)
+    {
+        cout << "暂时没有联系人" << endl;
+    }
+        cout << "按下 1 代表添加联系人 按下 2代表退出" << endl;
+        cin >> flag;
+        while (flag != 1 && flag != 2)
+        {
+            cout << "请按照要求选择" << endl;
+            cin >> flag;
+            if (flag == 1 || flag == 2)
+                break;
+        }
+        //选择需要添加几个联系人 添加的同时使用哈希处理进行分组分类
+        if (flag == 1)
+        {
+            int person_size;
+            cout << "请选择添加几个人" << endl;
+            cin >> person_size;
+            int i = 0;
+            while (i < person_size)//开始申请内存空间
+            {//在输入的同时 率先建立vector 并且存入数值
+
+                Record* tmp_Record = new Record;
+                cout << "请输入第" << (i + 1) << "个人的电话号" << endl;
+                cin >> tmp_Record->phone_num;
+                //person.push_back(tmp_Record->phone_num);
+
+                cout << "请输入第" << (i + 1) << "个人的姓名" << endl;
+                cin >> tmp_Record->name;
+                //person.push_back(tmp_Record->name);
+
+                cout << "请输入第" << (i + 1) << "个人的地址" << endl;
+                cin >> tmp_Record->address;
+                //person.push_back(tmp_Record->address);
+
+
+                PersonList[tmp_Record->name] = tmp_Record;//这一步就建立了哈希表和存地址
+
+                i++;
+                //哈希处理 这里定义前三位电话数字-130作为key 来分类 同时按照名字分类
+                //动态读取前三个电话号码
+                string three_num;
+                int num_read_flag = 0;
+                for (char c : tmp_Record->phone_num)
+                {
+                    if (num_read_flag == 3)
+                        break;
+                    three_num += c;
+                    num_read_flag++;
+                }
+
+                //开始分类
+                //首先先将前三位数字转成int类型减去130
+                int str2int = atoi(three_num.c_str());
+                int end_num = str2int - 130;//目前我们得到了前三位数字减去130得到了key
+                if (H[end_num].ptr == nullptr)
+                {
+                    H[end_num].ptr = tmp_Record;
+                    tmp_Record->first = (H+end_num);
+                    H[end_num].num++;//H[end_num]下方联系人+1
+                }
+                //如果已经连过了 那我们就开向下遍历 链接就好
+                else
+                {   Record* s;
+                    s = H[end_num].ptr;
+                    int i = 0;
+                    for (i; i < H[end_num].num; i++)
+                    {
+                        
+                        
+                        s->ptr = tmp_Record;
+                        //s->first = H[end_num].ptr;
+                        s = tmp_Record;
+                    }
+                    //H[i].ptr = tmp_Record;
+                }
+
+
+
+            }
+            cout << "已添加完成" << endl;
+          
+        }
+        
+ // return R;
+    }
+  
+//两种方式查找联系人
+void Record::output(const string& name, unordered_map<string, Record*>& PersonList)
+{
+  
+    int flag = 0;
+    //这个时候已经输入了名字
+    Record* tmp;
+    for (auto it = PersonList.begin(); it != PersonList.end(); it++)
+    {
+        if (it->first == name)
+        {
+            tmp = it->second;
+            cout << "电话号码：" << tmp->phone_num << endl;
+            cout << "姓名：" << tmp->name << endl;
+            cout << "住址：" << tmp->address << endl;
+            flag = 1;
+        }
+    }
+    if (flag == 0)
+    {
+        cout << "查无此人" << endl;
+    }
+
+}
+void Record::output2(const string& phone_num, HashList H[])
+{//第一步 读取前三位并且减去一百
+    string three_num;
+    int num_read_flag = 0;
+    //读取前三位
+    for (char c : phone_num)
+    {
+        if (num_read_flag == 3)
+            break;
+       
+        three_num += c;
+        num_read_flag++;
+    }
+    int str2int = atoi(three_num.c_str());
+    int end_num = str2int - 130;//目前我们得到了前三位数字减去130得到了key
+    
+    Record* tmp;
+    //接下来开始遍历
+
+    int flag = 0;
+    for (int i = 0; i < 40; i++)
+    {
+        if (i == end_num)
+        {
+            for (tmp = H[i].ptr; tmp != nullptr; tmp = tmp->ptr)
+            {
+                if (tmp->phone_num == phone_num)
+                {
+                    cout << "电话号码：" << tmp->phone_num << endl;
+                    cout << "姓名：" << tmp->name << endl;
+                    cout << "住址：" << tmp->address << endl;
+                    flag = 1;
+                    //break;
+                }
+
+            }
+            
+        }
+        
+
+    }
+    if (flag == 0)
+            {
+                cout << "查无此人！！！！" << endl;
+            }
+
+}
+
+
+void  Record::delete_person(HashList H[], const string& data)//删除不想要的联系人(检测输入名字或者电话号码都可以)
+{
+    cout << "您输入的是姓名吗？[y/n]" << endl;
+    char justice=1;
+    cin >> justice;
+    if (justice =='y')//按照姓名删除
+    {
+        cout << "删除几个？" << endl;
+        int num = 0;
+        cin >> num;
+        for (num; num >= 0; num--)
+        {
+          
+            int flag = 0;
+            //这个时候已经输入了名字
+            Record* tmp;
+            for (auto it = PersonList.begin(); it != PersonList.end(); it++)
+            {
+                if (it->first == data)
+                {
+                    tmp = it->second;
+                    cout << "电话号码：" << tmp->phone_num << endl;
+                    cout << "姓名：" << tmp->name << endl;
+                    cout << "住址：" << tmp->address << endl;
+                    flag = 1;
+                    cout << "删除他/她吗？[y/n]" << endl;
+                    char just=1;
+                    cin >> just;
+                    if (just == 'y')
+                    {
+                        PersonList.erase(it);//已经删除
+                        cout << "已删除" << endl;
+                    }
+                    else
+                    {
+                        flag = 1;
+                        break;
+                    }
+                }if (flag == 0)
+                {
+                 cout << "查无此人" << endl;
+                }
+        }    
+            cout << "重新查询吗？[y/n]" << endl;
+            char j = 1;
+            cin >> j;
+            if (j == 'y')
+            {
+               ++num;
+            }
+            }
+            
+    }
+    else//按照电话号码删除
+    {
+
+        //第一步 读取前三位并且减去一百
+        string three_num;
+        int num_read_flag = 0;
+        //读取前三位
+        for (char c : data)
+        {
+            if (num_read_flag == 3)
+                break;
+
+            three_num += c;
+            num_read_flag++;
+        }
+        int str2int = atoi(three_num.c_str());
+        int end_num = str2int - 130;//目前我们得到了前三位数字减去130得到了key
+
+        Record* tmp=nullptr;
+        //接下来开始遍历
+
+        int flag = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            if (i == end_num)
+            {
+                
+                for (tmp = H[i].ptr; tmp != nullptr; tmp = tmp->ptr)
+                {
+                    if (tmp->phone_num == data)
+                    {
+                        cout << "电话号码：" << tmp->phone_num << endl;
+                        cout << "姓名：" << tmp->name << endl;
+                        cout << "住址：" << tmp->address << endl;
+                        flag = 1;
+                        char just;
+                        cout << "请问是要删除他/她吗？[y/n]" << endl;
+                        cin >> just;
+                        if (just == 'y')
+                        {
+                            delete tmp;
+                            cout << "删除完成" << endl;
+                            Record* tmp2=nullptr;
+                            for (tmp2 =H[i].ptr; tmp2 != nullptr; tmp2 = tmp2->ptr)
+                            {  
+                                if (tmp2->ptr == tmp)
+                                {
+                                    tmp2->ptr = tmp->ptr;
+                                    free (tmp);
+                                    cout << "删除完成" << endl;
+                                   
+                                   
+                                }
+                           }
+                             
+                        }
+                        else
+                        {
+                            flag = 1;
+                            break;
+                        }
+                    }
+
+                } if (flag == 0)
+                {
+                  cout << "查无此人" << endl;
+                }
+                cout << "重新查询吗？[y/n]" << endl;
+                char j = 1;
+                cin >> j;
+                if (j == 'y')
+                {
+                    i = -1;
+                }
+                
+            } 
+
+        }
+        
+    }
+}
+
+void   Record::alter_inf(HashList H[], const string& data)//修改成员信息
+{
+    cout << "您要使用电话号码查找并且修改吗[y/n](y代表用电话号码 n代表用名字查找并且修改)" << endl;
+    char flag = 1;
+    cin >> flag;
+    if (flag == 'y')//代表用电话号码查找并且修改
+    {
+        //首先先用电话号码查找
+       // 第一步 读取前三位并且减去一百
+            string three_num;
+        int num_read_flag = 0;
+        //读取前三位
+        for (char c : data)
+        {
+            if (num_read_flag == 3)
+                break;
+
+            three_num += c;
+            num_read_flag++;
+        }
+        int str2int = atoi(three_num.c_str());
+        int end_num = str2int - 130;//目前我们得到了前三位数字减去130得到了key
+
+        Record* tmp;
+        //接下来开始遍历
+
+        int flag = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            if (i == end_num)
+            {
+                for (tmp = H[i].ptr; tmp != nullptr; tmp = tmp->ptr)
+                {
+                    if (tmp->phone_num == data)
+                    {
+                        cout << "电话号码：" << tmp->phone_num << endl;
+                        cout << "姓名：" << tmp->name << endl;
+                        cout << "住址：" << tmp->address << endl;
+                        flag = 1;
+                        //break;
+                        cout << "请问是要修改他吗[y/n]" << endl;
+                        char flag2 = 1;
+                        cin >> flag2;
+                        if (flag2 == 'y')
+
+                        {
+                            char flag3 = 1;
+                            string alter_data;
+                            cout << "修改电话号码[y/n]" << endl;
+                            cin >> flag3;
+                            if (flag3 == 'y')
+                            {
+                                cout << "请输入新的号码" << endl;
+                                cin >> alter_data;
+                                tmp->phone_num = alter_data;
+                            }
+                            cout << "修改联系人姓名[y/n]" << endl;
+                            cin >> flag3;
+                            if (flag3 == 'y')
+                            {
+                                cout << "请输入新的联系人姓名" << endl;
+                                cin >> alter_data;
+                                tmp->name = alter_data;
+                            }
+                            cout << "修改联系人住址[y/n]" << endl;
+                            cin >> flag3;
+                            if (flag3 == 'y')
+                            {
+                                cout << "请输入新的联系人住址" << endl;
+                                cin >> alter_data;
+                                tmp->address = alter_data;
+                            }
+                            cout << "电话号码：" << tmp->phone_num << endl;
+                            cout << "姓名：" << tmp->name << endl;
+                            cout << "住址：" << tmp->address << endl;
+                        }
+                    }
+
+                }
+
+            }
+
+
+        }
+        if (flag == 0)
+        {
+            cout << "查无此人！！！！" << endl;
+        }
+     }
+    else
+    {
+        
+        int flag = 0;
+        //这个时候已经输入了名字
+        Record* tmp;
+        for (auto it = PersonList.begin(); it != PersonList.end(); it++)
+        {
+            if (it->first == data)
+            {
+                tmp = it->second;
+                cout << "电话号码：" << tmp->phone_num << endl;
+                cout << "姓名：" << tmp->name << endl;
+                cout << "住址：" << tmp->address << endl;
+                flag = 1;
+                cout << "请问是要修改他吗[y/n]" << endl;
+                char flag2 = 1;
+                cin >> flag2;
+                if (flag2 == 'y')
+
+                {
+                    char flag3 = 1;
+                    string alter_data;
+                    cout << "修改电话号码[y/n]" << endl;
+                    cin >> flag3;
+                    if (flag3 == 'y')
+                    { 
+                        cout << "请输入新的号码" << endl;
+                        cin >> alter_data;
+                        tmp->phone_num = alter_data;
+                    }
+                    cout << "修改联系人姓名[y/n]" << endl;
+                    cin >> flag3;
+                    if (flag3 == 'y')
+                    {
+                        cout << "请输入新的联系人姓名" << endl;
+                        cin >> alter_data;
+                        tmp->name = alter_data;
+                    }
+                    cout << "修改联系人住址[y/n]" << endl;
+                    cin >> flag3;
+                    if (flag3 == 'y')
+                    {
+                        cout << "请输入新的联系人住址" << endl;
+                        cin >> alter_data;
+                        tmp->address = alter_data;
+                    }
+                    cout << "电话号码：" << tmp->phone_num << endl;
+                    cout << "姓名：" << tmp->name << endl;
+                    cout << "住址：" << tmp->address << endl;
+                }
+            }
+        }
+        if (flag == 0)
+        {
+            cout << "查无此人" << endl;
+        }
+    }
+}
+int main()
+{
+    while (1)
+    {
+        init();
+        int i = 0;
+        string s;
+        string phonenum;
+        string data;
+        cout << "请选择功能" << endl;
+        cin >> i;
+        if (i == 6)
+        {
+            cout << "期待您再次使用本系统" << endl;
+            break;
+        }
+        
+            if (i == 1)
+            R.createhash(H, R, PersonList);
+            
+            if(i==3)
+            { cout << "请输入查找的姓名" << endl;
+
+            cin >> s;
+            R.output(s, PersonList);//查找成功
+            }
+          
+            if (i == 2)
+
+                // 用电话查找
+            {
+                cout << "请输入电话" << endl;
+
+                cin >> phonenum;
+                R.output2(phonenum, H);
+            }
+            if (i == 5)
+                //删除不想要的联系人
+            {
+                cout << "请输入电话号码或者姓名" << endl;
+                cin >> data;
+                R.delete_person(H, data);
+            }
+            if (i == 4)
+            {
+                cout << "请输入要修改的数据" << endl;
+                cin >> data;
+                R.alter_inf(H, data); 
+            }
+       
+        }
+        //R.createhash( H, R, PersonList);
+
+       // cout << "请输入查找的姓名" << endl;
+        //string s;
+        //cin >> s;    
+        //R.output(s, PersonList);//查找成功
+
+        // 用电话查找
+       // cout << "请输入电话" << endl;
+        //string phonenum;
+        //cin >> phonenum;
+        //R.output2(phonenum,H);
+
+        //删除不想要的联系人
+       /* cout << "请输入数据" << endl;
+        string data;
+        cin >> data;
+        R.delete_person(H, data);
+        */
+        system("pause");
+        return 0;
+    
+}
