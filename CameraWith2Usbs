@@ -1,0 +1,45 @@
+//buy a new camera with two usbs this is a function to take some pictures
+int main() {
+  // Mat bdd = imread("/home/jpc/图片/bdd.jpg");
+  VideoCapture camera1(4);
+  VideoCapture camera2(0);
+  Mat left;
+  Mat right;
+  Mat OutPut = Mat::zeros(left.rows, left.cols, -1);
+  Mat left_gray, right_gray;
+
+  int i = 0;
+  stringstream sl, sr;
+  string s_l, s_r;
+  auto t1 = std::chrono::system_clock::now();
+  while (1) {
+
+    camera1 >> right;
+    camera2 >> left;
+    // cvtColor(right, right_gray, COLOR_BGR2GRAY);
+    // cvtColor(left, left_gray, COLOR_BGR2GRAY);
+    imshow("this is right", right);
+    imshow("this is left", left);
+    // sgbm(left_gray, right_gray, OutPut);
+    // imshow("output", OutPut);
+
+    if (waitKey(1) == 'c') {
+      sl << i << "_left";
+      sr << i << "_right";
+      s_l = sl.str();
+      s_r = sr.str();
+      imwrite("/home/jpc/rc_cal/left/" + s_l + ".jpg", left);
+      imwrite("/home/jpc/rc_cal/right/" + s_r + ".jpg", right);
+      sl.clear();
+      sl.str("");
+      sr.clear();
+      sr.str("");
+      cout << "ok" << endl;
+      i++;
+    }
+
+    waitKey(1);
+    cout << "over" << endl;
+  }
+  return 0;
+  }
